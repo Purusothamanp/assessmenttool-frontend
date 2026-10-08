@@ -247,7 +247,7 @@ export default function AdminAssessments() {
     return {
       id: Date.now(),
       text: '',
-      type,
+      type: type as 'MCQ' | 'ShortAnswer' | 'TrueFalse' | 'Essay',
       options: type === 'TrueFalse' ? ['True', 'False'] : type === 'ShortAnswer' || type === 'Essay' ? [] : ['', '', '', ''],
       correctAnswer: type === 'ShortAnswer' || type === 'Essay' ? undefined : 0,
       marks: 1
