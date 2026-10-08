@@ -242,6 +242,18 @@ export default function AdminAssessments() {
 
   const displayedAssessments = showAll ? filtered : filtered.slice(0, 3);
 
+  const getNewQ = () => {
+    const type = formats.multipleChoice ? 'MCQ' : formats.trueFalse ? 'TrueFalse' : formats.shortAnswer ? 'ShortAnswer' : formats.essay ? 'Essay' : 'MCQ';
+    return {
+      id: Date.now(),
+      text: '',
+      type,
+      options: type === 'TrueFalse' ? ['True', 'False'] : type === 'ShortAnswer' || type === 'Essay' ? [] : ['', '', '', ''],
+      correctAnswer: type === 'ShortAnswer' || type === 'Essay' ? undefined : 0,
+      marks: 1
+    };
+  };
+
   return (
     <div className="animate-premium">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.75rem' }}>
@@ -903,10 +915,16 @@ export default function AdminAssessments() {
                           boxShadow: isChecked ? '0 4px 12px rgba(59, 130, 246, 0.15)' : 'none'
                         }}>
                           <input 
-                            type="checkbox" 
+                            type="radio" 
+                            name="questionFormat"
                             style={{ width: '17px', height: '17px', accentColor: 'var(--admin-primary)' }} 
                             checked={isChecked}
-                            onChange={e => setFormats({...formats, [f.id]: e.target.checked})}
+                            onChange={() => setFormats({
+                              multipleChoice: f.id === 'multipleChoice',
+                              trueFalse: f.id === 'trueFalse',
+                              shortAnswer: f.id === 'shortAnswer',
+                              essay: f.id === 'essay'
+                            })}
                           />
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1 }}>
                             <Icon size={16} color={isChecked ? 'var(--admin-primary)' : 'var(--muted-foreground)'} />
@@ -929,7 +947,7 @@ export default function AdminAssessments() {
                     </div>
                     <button 
                       type="button"
-                      onClick={() => setQuestions([...questions, { id: Date.now(), text: '', type: 'MCQ', options: ['', '', '', ''], correctAnswer: 0, marks: 1 }])}
+                      onClick={() => setQuestions([...questions, getNewQ()])}
                       className="btn-primary" 
                       style={{ 
                         display: 'flex', alignItems: 'center', gap: '0.45rem', 
@@ -943,7 +961,7 @@ export default function AdminAssessments() {
 
                   {questions.length === 0 ? (
                     <div 
-                      onClick={() => setQuestions([{ id: Date.now(), text: '', type: 'MCQ', options: ['', '', '', ''], correctAnswer: 0, marks: 1 }])}
+                      onClick={() => setQuestions([getNewQ()])}
                       style={{ 
                         padding: '2.5rem 1.5rem', textAlign: 'center', background: 'var(--accent)', 
                         borderRadius: '1rem', color: 'var(--muted-foreground)', border: '2px dashed var(--card-border)',
@@ -967,31 +985,9 @@ export default function AdminAssessments() {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
                             <span style={{ width: '28px', height: '28px', background: 'var(--admin-primary)', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 800 }}>{qIndex + 1}</span>
-                            <select 
-                              value={q.type || 'MCQ'} 
-                              onChange={e => {
-                                 const newQ = [...questions];
-                                 const type = e.target.value as 'MCQ' | 'ShortAnswer' | 'TrueFalse' | 'Essay';
-                                 newQ[qIndex].type = type;
-                                 if (type === 'ShortAnswer' || type === 'Essay') {
-                                   newQ[qIndex].options = [];
-                                   newQ[qIndex].correctAnswer = undefined;
-                                 } else if (type === 'TrueFalse') {
-                                   newQ[qIndex].options = ['True', 'False'];
-                                   newQ[qIndex].correctAnswer = 0;
-                                 } else {
-                                   newQ[qIndex].options = ['', '', '', ''];
-                                   newQ[qIndex].correctAnswer = 0;
-                                 }
-                                 setQuestions(newQ);
-                              }}
-                              style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem', borderRadius: '0.75rem', fontWeight: 600, border: '1px solid var(--card-border)', background: 'var(--accent)', color: 'var(--foreground)' }}
-                            >
-                              <option value="MCQ">Multiple Choice</option>
-                              <option value="TrueFalse">True / False</option>
-                              <option value="ShortAnswer">Short Answer</option>
-                              <option value="Essay">Essay Question</option>
-                            </select>
+                            <div style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem', borderRadius: '0.75rem', fontWeight: 600, border: '1px solid var(--card-border)', background: 'var(--accent)', color: 'var(--foreground)' }}>
+                              {q.type === 'MCQ' ? 'Multiple Choice' : q.type === 'TrueFalse' ? 'True / False' : q.type === 'ShortAnswer' ? 'Short Answer' : 'Essay Question'}
+                            </div>
                             
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginLeft: '0.5rem', paddingLeft: '0.75rem', borderLeft: '1px solid var(--card-border)' }}>
                               <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase' }}>Marks</label>

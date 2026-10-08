@@ -32,9 +32,15 @@ export default function StudentMaterials() {
         setLoading(true);
         const res = await fetch(`${API_BASE_URL}/study-materials`);
         const data = await res.json();
-        setMaterials(data);
+        if (Array.isArray(data)) {
+          setMaterials(data);
+        } else {
+          console.error('API did not return an array:', data);
+          setMaterials([]);
+        }
       } catch (err) {
         console.error('Error fetching materials', err);
+        setMaterials([]);
       } finally {
         setLoading(false);
       }

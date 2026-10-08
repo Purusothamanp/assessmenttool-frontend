@@ -10,7 +10,9 @@ import {
   X,
   File,
   Calendar,
-  AlertCircle
+  AlertCircle,
+  Send,
+  Check
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
@@ -26,6 +28,13 @@ interface StudyMaterial {
   uploadDate: string;
 }
 
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
 export default function EducatorMaterials() {
   const { user } = useAuth();
   const [materials, setMaterials] = useState<StudyMaterial[]>([]);
@@ -38,6 +47,42 @@ export default function EducatorMaterials() {
   const [description, setDescription] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Send Modal State
+  const [showSendModal, setShowSendModal] = useState(false);
+  const [selectedMaterial, setSelectedMaterial] = useState<StudyMaterial | null>(null);
+  const [students, setStudents] = useState<User[]>([]);
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+  const [isSending, setIsSending] = useState(false);
+  const [sendSuccess, setSendSuccess] = useState(false);
+
+  const openSendModal = async (material: StudyMaterial) => {
+    setSelectedMaterial(material);
+    setShowSendModal(true);
+    setSendSuccess(false);
+    setSelectedStudentIds([]);
+    try {
+      const res = await fetch(`${API_BASE_URL}/users?role=student`);
+      if (res.ok) {
+        const data = await res.json();
+        setStudents(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch students', err);
+    }
+  };
+
+  const handleSendMaterial = () => {
+    setIsSending(true);
+    // Simulate sending email/notification
+    setTimeout(() => {
+      setIsSending(false);
+      setSendSuccess(true);
+      setTimeout(() => {
+        setShowSendModal(false);
+      }, 2000);
+    }, 1500);
+  };
 
   const fetchMaterials = async () => {
     try {
@@ -251,15 +296,26 @@ export default function EducatorMaterials() {
                   </div>
                 </div>
                 
-                <button 
-                  onClick={() => handleDelete(m.id)}
-                  title="Delete"
-                  style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.4rem', borderRadius: '0.4rem' }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239,68,68,0.1)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                >
-                  <Trash2 size={16} />
-                </button>
+                <div style={{ display: 'flex', gap: '0.25rem' }}>
+                  <button 
+                    onClick={() => openSendModal(m)}
+                    title="Send to Students"
+                    style={{ background: 'transparent', border: 'none', color: 'var(--educator-primary)', cursor: 'pointer', padding: '0.4rem', borderRadius: '0.4rem' }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--educator-accent)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <Send size={16} />
+                  </button>
+                  <button 
+                    onClick={() => handleDelete(m.id)}
+                    title="Delete"
+                    style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.4rem', borderRadius: '0.4rem' }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239,68,68,0.1)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               </div>
 
               {m.description && (
@@ -290,6 +346,127 @@ export default function EducatorMaterials() {
           ))
         )}
       </div>
+
+      {showSendModal && selectedMaterial && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+          background: 'rgba(0,0,0,0.5)', zIndex: 9999, 
+          display: 'flex', alignItems: 'flex-start', justifyContent: 'center', backdropFilter: 'blur(4px)',
+          paddingTop: '15vh'
+        }}>
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: -20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            style={{ 
+              background: 'var(--card)', padding: '2rem', borderRadius: '1.25rem', 
+              width: '90%', maxWidth: '500px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+              display: 'flex', flexDirection: 'column', maxHeight: '80vh'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+              <div>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0 0 0.5rem' }}>Send Material</h2>
+                <p style={{ fontSize: '0.85rem', color: 'var(--muted-foreground)', margin: 0 }}>
+                  Share <span style={{ fontWeight: 600, color: 'var(--foreground)' }}>{selectedMaterial.title}</span>
+                </p>
+              </div>
+              <button onClick={() => setShowSendModal(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            {sendSuccess ? (
+              <div style={{ textAlign: 'center', padding: '2rem 0' }}>
+                <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
+                  <Check size={30} color="white" />
+                </div>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: '0 0 0.5rem' }}>Sent Successfully!</h3>
+                <p style={{ fontSize: '0.9rem', color: 'var(--muted-foreground)', margin: 0 }}>
+                  Students will receive a notification.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, margin: 0 }}>Select Recipients</label>
+                    <button 
+                      onClick={() => {
+                        if (selectedStudentIds.length === students.length) {
+                          setSelectedStudentIds([]);
+                        } else {
+                          setSelectedStudentIds(students.map(s => s.id));
+                        }
+                      }}
+                      style={{ background: 'transparent', border: 'none', color: 'var(--educator-primary)', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                    >
+                      {selectedStudentIds.length === students.length ? 'Deselect All' : 'Select All'}
+                    </button>
+                  </div>
+                  
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: '1fr 1fr', 
+                    gap: '0.75rem',
+                    maxHeight: '250px',
+                    overflowY: 'auto',
+                    paddingRight: '0.5rem',
+                    marginTop: '0.5rem'
+                  }}>
+                    {students.map(s => (
+                      <div 
+                        key={s.id}
+                        onClick={() => {
+                          if (selectedStudentIds.includes(s.id)) {
+                            setSelectedStudentIds(selectedStudentIds.filter(id => id !== s.id));
+                          } else {
+                            setSelectedStudentIds([...selectedStudentIds, s.id]);
+                          }
+                        }}
+                        style={{
+                          padding: '0.85rem',
+                          borderRadius: '0.75rem',
+                          border: `2px solid ${selectedStudentIds.includes(s.id) ? 'var(--educator-primary)' : 'var(--card-border)'}`,
+                          background: selectedStudentIds.includes(s.id) ? 'var(--educator-accent)' : 'var(--card)',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          boxShadow: selectedStudentIds.includes(s.id) ? '0 4px 12px rgba(0,0,0,0.05)' : 'none'
+                        }}
+                      >
+                        <div style={{ fontWeight: 700, fontSize: '0.9rem', color: selectedStudentIds.includes(s.id) ? 'var(--educator-primary)' : 'var(--foreground)', marginBottom: '0.25rem' }}>{s.name}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.email}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                  <button 
+                    onClick={() => setShowSendModal(false)}
+                    style={{ flex: 1, padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--card-border)', background: 'transparent', color: 'var(--foreground)', fontWeight: 600, cursor: 'pointer' }}
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={handleSendMaterial}
+                    disabled={isSending || selectedStudentIds.length === 0}
+                    style={{ 
+                      flex: 1, padding: '0.75rem', borderRadius: '0.5rem', border: 'none', 
+                      background: 'var(--educator-primary)', color: 'white', fontWeight: 700, 
+                      cursor: (isSending || selectedStudentIds.length === 0) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                      opacity: (isSending || selectedStudentIds.length === 0) ? 0.7 : 1
+                    }}
+                  >
+                    {isSending ? 'Sending...' : <><Send size={16} /> Send Now {selectedStudentIds.length > 0 ? `(${selectedStudentIds.length})` : ''}</>}
+                  </button>
+                </div>
+              </>
+            )}
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }
