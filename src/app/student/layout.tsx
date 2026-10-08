@@ -138,6 +138,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
     { name: 'Dashboard', href: '/student', icon: LayoutDashboard },
     { name: 'My Assessments', href: '/student/assessments', icon: BookOpen },
     { name: 'Results & Feedback', href: '/student/results', icon: CheckSquare },
+    { name: 'Study Materials', href: '/student/materials', icon: BookOpen },
   ];
 
   return (

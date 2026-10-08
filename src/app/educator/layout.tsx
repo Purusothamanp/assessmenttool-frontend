@@ -7,7 +7,8 @@ import {
   BookOpen, 
   LogOut, 
   GraduationCap,
-  LayoutDashboard
+  LayoutDashboard,
+  Users
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { motion } from 'framer-motion';
@@ -116,8 +117,10 @@ export default function EducatorLayout({ children }: { children: React.ReactNode
 
   const menuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/educator' },
+    { name: 'Student Directory', icon: Users, path: '/educator/students' },
     { name: 'Manage Assessments', icon: BookOpen, path: '/educator/assessments' },
     { name: 'Student Progress', icon: BarChart3, path: '/educator/results' },
+    { name: 'Study Materials', icon: BookOpen, path: '/educator/materials' },
   ];
 
   return (
