@@ -254,41 +254,6 @@ function LoginForm() {
             Don&apos;t have an account? <Link href="/register" style={{ color: '#3b82f6', fontWeight: 800, textDecoration: 'none' }}>Register Now</Link>
           </p>
 
-          <div style={{ marginTop: '2rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem' }}>
-            <p style={{ textAlign: 'center', fontSize: '0.8rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>
-              Or use a demo account
-            </p>
-            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail('educator@gmail.com');
-                  setPassword('educator123');
-                }}
-                style={{
-                  padding: '0.6rem 1.2rem', background: '#f8fafc', border: '1px solid #cbd5e1', 
-                  borderRadius: '0.5rem', fontSize: '0.85rem', color: '#0f172a', fontWeight: 700, cursor: 'pointer',
-                  transition: 'all 0.2s ease', boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-                }}
-              >
-                🎓 Educator Demo
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail('student@gmail.com');
-                  setPassword('student123');
-                }}
-                style={{
-                  padding: '0.6rem 1.2rem', background: '#f8fafc', border: '1px solid #cbd5e1', 
-                  borderRadius: '0.5rem', fontSize: '0.85rem', color: '#0f172a', fontWeight: 700, cursor: 'pointer',
-                  transition: 'all 0.2s ease', boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-                }}
-              >
-                📚 Student Demo
-              </button>
-            </div>
-          </div>
         </form>
         </div>
       </motion.div>
