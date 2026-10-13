@@ -9,6 +9,7 @@ import {
   BookOpen
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useAuth } from '@/context/AuthContext';
 import { API_BASE_URL } from '@/lib/api';
 
 interface StudyMaterial {
@@ -19,9 +20,12 @@ interface StudyMaterial {
   fileType: string;
   uploadedBy: string;
   uploadDate: string;
+  sentStudentIds?: string[];
+  sentStudentIdsJson?: string;
 }
 
 export default function StudentMaterials() {
+  const { user } = useAuth();
   const [materials, setMaterials] = useState<StudyMaterial[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -48,10 +52,16 @@ export default function StudentMaterials() {
     fetchMaterials();
   }, []);
 
-  const filteredMaterials = materials.filter(m => 
-    m.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    m.description?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredMaterials = materials.filter(m => {
+    if (m.sentStudentIds && m.sentStudentIds.length > 0) {
+      const isRecipient = user && (m.sentStudentIds.includes(user.id) || m.sentStudentIds.includes(user.name));
+      if (!isRecipient) return false;
+    }
+    return (
+      m.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      m.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  });
 
   const formatDate = (dateString: string) => {
     if (!dateString) return 'Unknown';

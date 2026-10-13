@@ -16,7 +16,8 @@ import {
   Layers,
   Award,
   X,
-  Download
+  Download,
+  AlertCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
@@ -59,6 +60,31 @@ export default function ManageAssessments() {
   // Assignment specific states
   const [studentsList, setStudentsList] = useState<any[]>([]);
   const [selectedAssignees, setSelectedAssignees] = useState<string[]>(['All']);
+  const [assignedStudentNames, setAssignedStudentNames] = useState<string[]>([]);
+  const [assignNotification, setAssignNotification] = useState<{ type: 'success' | 'warning' | 'error'; message: string } | null>(null);
+  const [isAssigning, setIsAssigning] = useState(false);
+
+  const openAssignModal = async (assessment: Assessment) => {
+    setSelectedAssessment(assessment);
+    setAssignNotification(null);
+    try {
+      const res = await fetch(`${API_BASE_URL}/submissions?assessmentId=${assessment.id}`);
+      if (res.ok) {
+        const subs = await res.json();
+        const names = Array.isArray(subs)
+          ? subs.map((s: any) => s.studentName?.trim().toLowerCase()).filter(Boolean)
+          : [];
+        setAssignedStudentNames(names);
+      } else {
+        setAssignedStudentNames([]);
+      }
+    } catch (err) {
+      console.error('Failed to load existing submissions:', err);
+      setAssignedStudentNames([]);
+    }
+    setSelectedAssignees(['All']);
+    setShowAssignModal(true);
+  };
 
   // Form states
   const [title, setTitle] = useState('');
@@ -497,7 +523,7 @@ export default function ManageAssessments() {
                         <motion.button
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
-                          onClick={() => { setSelectedAssessment(a); setShowAssignModal(true); }}
+                          onClick={() => openAssignModal(a)}
                           style={{
                             width: '36px', height: '36px', borderRadius: '10px', background: 'var(--educator-accent)',
                             color: 'var(--educator-primary)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
@@ -577,7 +603,7 @@ export default function ManageAssessments() {
                     <span style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>{a.date}</span>
                     <div style={{ display: 'flex', gap: '0.35rem' }}>
                       <button 
-                        onClick={() => { setSelectedAssessment(a); setShowAssignModal(true); }}
+                        onClick={() => openAssignModal(a)}
                         className="user-action-btn edit"
                         title="Assign"
                       >
@@ -627,81 +653,165 @@ export default function ManageAssessments() {
               exit={{ opacity: 0, scale: 0.85, y: 30 }}
               transition={{ type: 'spring', damping: 25, stiffness: 350 }}
               className="premium-card"
-              style={{ width: '100%', maxWidth: '650px', padding: '3rem', borderRadius: '1.5rem', background: '#ffffff', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.3)' }}
+              style={{ width: '100%', maxWidth: '650px', padding: '2.5rem', borderRadius: '1.5rem', background: '#ffffff', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.3)' }}
             >
-              <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-                <div style={{ position: 'relative', display: 'inline-block', marginBottom: '1.5rem' }}>
+              <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
+                <div style={{ position: 'relative', display: 'inline-block', marginBottom: '1.25rem' }}>
                   <div style={{ position: 'absolute', inset: 0, background: '#059669', filter: 'blur(20px)', opacity: 0.4, borderRadius: '50%' }} />
                   <div style={{
-                    position: 'relative', width: '72px', height: '72px',
+                    position: 'relative', width: '64px', height: '64px',
                     background: 'linear-gradient(135deg, #059669, #10b981)',
-                    color: 'white', borderRadius: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: 'white', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center',
                     boxShadow: '0 8px 24px -4px rgba(5, 150, 105, 0.5), inset 0 2px 4px rgba(255,255,255,0.3)'
                   }}>
-                    <Send size={32} />
+                    <Send size={28} />
                   </div>
                 </div>
-                <h2 style={{ fontSize: '1.85rem', fontWeight: 900, letterSpacing: '-0.5px', marginBottom: '0.4rem', color: '#0f172a' }}>Publish Content</h2>
-                <p style={{ color: '#64748b', fontSize: '1rem', fontWeight: 500 }}>{selectedAssessment?.title}</p>
+                <h2 style={{ fontSize: '1.75rem', fontWeight: 900, letterSpacing: '-0.5px', marginBottom: '0.35rem', color: '#0f172a' }}>Publish Assessment</h2>
+                <p style={{ color: '#64748b', fontSize: '0.95rem', fontWeight: 500, margin: 0 }}>{selectedAssessment?.title}</p>
               </div>
 
-              <div style={{ marginBottom: '2.5rem' }}>
-                <label style={{ display: 'block', fontSize: '0.8rem', marginBottom: '0.75rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                  Target Audience
-                </label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem', maxHeight: '280px', overflowY: 'auto', paddingRight: '0.5rem', paddingBottom: '0.5rem' }}>
-                  <div
-                    onClick={() => setSelectedAssignees(['All'])}
+              {/* In-Modal Notification Alert */}
+              <AnimatePresence>
+                {assignNotification && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
                     style={{
-                      gridColumn: '1 / -1',
-                      padding: '1rem', borderRadius: '1rem', cursor: 'pointer', transition: 'all 0.2s ease',
-                      display: 'flex', alignItems: 'center', gap: '0.75rem',
-                      background: selectedAssignees.includes('All') ? '#ecfdf5' : '#f8fafc',
-                      border: `2px solid ${selectedAssignees.includes('All') ? '#10b981' : 'transparent'}`,
-                      boxShadow: selectedAssignees.includes('All') ? '0 4px 12px rgba(16, 185, 129, 0.15)' : 'none'
+                      padding: '0.85rem 1.15rem',
+                      borderRadius: '0.75rem',
+                      marginBottom: '1.25rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                      fontSize: '0.88rem',
+                      fontWeight: 600,
+                      background: assignNotification.type === 'success' ? '#ecfdf5' : assignNotification.type === 'warning' ? '#fffbeb' : '#fef2f2',
+                      color: assignNotification.type === 'success' ? '#065f46' : assignNotification.type === 'warning' ? '#92400e' : '#991b1b',
+                      border: `1.5px solid ${assignNotification.type === 'success' ? '#a7f3d0' : assignNotification.type === 'warning' ? '#fde68a' : '#fecaca'}`,
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
                     }}
                   >
-                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: selectedAssignees.includes('All') ? '#10b981' : '#e2e8f0', color: selectedAssignees.includes('All') ? 'white' : '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>🚀</div>
-                    <div style={{ flex: 1 }}>
-                      <p style={{ margin: 0, fontWeight: 700, color: selectedAssignees.includes('All') ? '#065f46' : '#0f172a', fontSize: '0.95rem' }}>All Active Students</p>
-                      <p style={{ margin: 0, fontSize: '0.75rem', color: selectedAssignees.includes('All') ? '#047857' : '#64748b' }}>Assign to everyone</p>
-                    </div>
-                    {selectedAssignees.includes('All') && <CheckCircle2 size={20} color="#10b981" />}
-                  </div>
+                    {assignNotification.type === 'success' ? (
+                      <CheckCircle2 size={20} color="#059669" style={{ flexShrink: 0 }} />
+                    ) : (
+                      <AlertCircle size={20} color={assignNotification.type === 'warning' ? '#d97706' : '#dc2626'} style={{ flexShrink: 0 }} />
+                    )}
+                    <span style={{ flex: 1 }}>{assignNotification.message}</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <div style={{ marginBottom: '2rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>
+                    Target Audience
+                  </label>
+                  <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>
+                    {studentsList.filter(s => assignedStudentNames.includes(s.name?.trim().toLowerCase())).length} already assigned
+                  </span>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem', maxHeight: '260px', overflowY: 'auto', paddingRight: '0.5rem', paddingBottom: '0.5rem' }}>
+                  {(() => {
+                    const unassignedCount = studentsList.filter(s => !assignedStudentNames.includes(s.name?.trim().toLowerCase())).length;
+                    const allAssigned = unassignedCount === 0;
+                    return (
+                      <div
+                        onClick={() => {
+                          if (allAssigned) {
+                            setAssignNotification({
+                              type: 'warning',
+                              message: '⚠️ All active students have already received this assessment.'
+                            });
+                            return;
+                          }
+                          setAssignNotification(null);
+                          setSelectedAssignees(['All']);
+                        }}
+                        style={{
+                          gridColumn: '1 / -1',
+                          padding: '0.85rem 1rem', borderRadius: '1rem', cursor: allAssigned ? 'not-allowed' : 'pointer', transition: 'all 0.2s ease',
+                          display: 'flex', alignItems: 'center', gap: '0.75rem',
+                          background: allAssigned ? '#f1f5f9' : selectedAssignees.includes('All') ? '#ecfdf5' : '#f8fafc',
+                          border: `2px solid ${selectedAssignees.includes('All') && !allAssigned ? '#10b981' : '#e2e8f0'}`,
+                          opacity: allAssigned ? 0.7 : 1,
+                          boxShadow: selectedAssignees.includes('All') && !allAssigned ? '0 4px 12px rgba(16, 185, 129, 0.15)' : 'none'
+                        }}
+                      >
+                        <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: selectedAssignees.includes('All') && !allAssigned ? '#10b981' : '#e2e8f0', color: selectedAssignees.includes('All') && !allAssigned ? 'white' : '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem' }}>🚀</div>
+                        <div style={{ flex: 1 }}>
+                          <p style={{ margin: 0, fontWeight: 700, color: selectedAssignees.includes('All') && !allAssigned ? '#065f46' : '#0f172a', fontSize: '0.92rem' }}>
+                            All Active Students {allAssigned ? '(All Already Assigned)' : `(${unassignedCount} remaining)`}
+                          </p>
+                          <p style={{ margin: 0, fontSize: '0.75rem', color: selectedAssignees.includes('All') && !allAssigned ? '#047857' : '#64748b' }}>
+                            {allAssigned ? 'Everyone has this assessment' : 'Assign to all unassigned students'}
+                          </p>
+                        </div>
+                        {selectedAssignees.includes('All') && !allAssigned && <CheckCircle2 size={20} color="#10b981" />}
+                      </div>
+                    );
+                  })()}
 
                   {studentsList.map(s => {
-                    const isSelected = selectedAssignees.includes(s.id);
+                    const isAlreadyAssigned = assignedStudentNames.includes(s.name?.trim().toLowerCase());
+                    const isSelected = !isAlreadyAssigned && (selectedAssignees.includes('All') || selectedAssignees.includes(s.id));
+
                     return (
                       <div
                         key={s.id}
                         onClick={() => {
+                          if (isAlreadyAssigned) {
+                            setAssignNotification({
+                              type: 'warning',
+                              message: `⚠️ Already Sent! This assessment has already been assigned to ${s.name}. Cannot re-send.`
+                            });
+                            return;
+                          }
+
+                          setAssignNotification(null);
                           if (selectedAssignees.includes('All')) {
                             setSelectedAssignees([s.id]);
                           } else {
                             if (isSelected) {
                               const newSelection = selectedAssignees.filter(id => id !== s.id);
-                              setSelectedAssignees(newSelection.length > 0 ? newSelection : ['All']);
+                              setSelectedAssignees(newSelection.length > 0 ? newSelection : []);
                             } else {
                               setSelectedAssignees([...selectedAssignees, s.id]);
                             }
                           }
                         }}
                         style={{
-                          padding: '1rem', borderRadius: '1rem', cursor: 'pointer', transition: 'all 0.2s ease',
+                          padding: '0.85rem 1rem', borderRadius: '1rem',
+                          cursor: isAlreadyAssigned ? 'default' : 'pointer',
+                          transition: 'all 0.2s ease',
                           display: 'flex', alignItems: 'center', gap: '0.75rem',
-                          background: isSelected ? '#ecfdf5' : '#f8fafc',
-                          border: `2px solid ${isSelected ? '#10b981' : 'transparent'}`,
+                          background: isAlreadyAssigned ? '#f8fafc' : isSelected ? '#ecfdf5' : '#ffffff',
+                          border: `2px solid ${isAlreadyAssigned ? '#cbd5e1' : isSelected ? '#10b981' : '#e2e8f0'}`,
+                          opacity: isAlreadyAssigned ? 0.75 : 1,
                           boxShadow: isSelected ? '0 4px 12px rgba(16, 185, 129, 0.15)' : 'none'
                         }}
                       >
-                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: isSelected ? '#10b981' : '#e2e8f0', color: isSelected ? 'white' : '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+                        <div style={{
+                          width: '38px', height: '38px', borderRadius: '50%',
+                          background: isAlreadyAssigned ? '#94a3b8' : isSelected ? '#10b981' : '#e2e8f0',
+                          color: isAlreadyAssigned ? '#ffffff' : isSelected ? 'white' : '#64748b',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold'
+                        }}>
                           {s.name.charAt(0).toUpperCase()}
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <p style={{ margin: 0, fontWeight: 700, color: isSelected ? '#065f46' : '#0f172a', fontSize: '0.95rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</p>
-                          <p style={{ margin: 0, fontSize: '0.75rem', color: isSelected ? '#047857' : '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.email}</p>
+                          <p style={{ margin: 0, fontWeight: 700, color: isAlreadyAssigned ? '#64748b' : isSelected ? '#065f46' : '#0f172a', fontSize: '0.9rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</p>
+                          <p style={{ margin: 0, fontSize: '0.72rem', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.email}</p>
                         </div>
-                        {isSelected && <CheckCircle2 size={20} color="#10b981" />}
+                        {isAlreadyAssigned ? (
+                          <span style={{ fontSize: '0.7rem', padding: '0.2rem 0.5rem', borderRadius: '1rem', background: '#e2e8f0', color: '#475569', fontWeight: 700, flexShrink: 0 }}>
+                            Already Sent
+                          </span>
+                        ) : isSelected ? (
+                          <CheckCircle2 size={18} color="#10b981" style={{ flexShrink: 0 }} />
+                        ) : null}
                       </div>
                     );
                   })}
@@ -711,8 +821,8 @@ export default function ManageAssessments() {
               <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
                 <motion.button 
                   whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                  onClick={() => setShowAssignModal(false)} 
-                  style={{ flex: 1, padding: '1rem', borderRadius: '1rem', border: '1px solid #e2e8f0', background: '#ffffff', color: '#64748b', fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer', transition: 'all 0.2s' }}
+                  onClick={() => { setShowAssignModal(false); setAssignNotification(null); }} 
+                  style={{ flex: 1, padding: '0.85rem', borderRadius: '1rem', border: '1px solid #e2e8f0', background: '#ffffff', color: '#64748b', fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer', transition: 'all 0.2s' }}
                   onMouseEnter={(e) => e.currentTarget.style.background = '#f1f5f9'}
                   onMouseLeave={(e) => e.currentTarget.style.background = '#ffffff'}
                 >
@@ -721,14 +831,35 @@ export default function ManageAssessments() {
                 <motion.button
                   whileHover={{ scale: 1.02, boxShadow: '0 10px 25px -5px rgba(5, 150, 105, 0.4)' }} 
                   whileTap={{ scale: 0.98 }}
+                  disabled={isAssigning}
                   onClick={async () => {
                     try {
+                      setIsAssigning(true);
+                      setAssignNotification(null);
+
+                      const unassignedStudents = studentsList.filter(s => !assignedStudentNames.includes(s.name?.trim().toLowerCase()));
                       const targets = selectedAssignees.includes('All')
-                        ? studentsList
+                        ? unassignedStudents
                         : studentsList.filter(s => selectedAssignees.includes(s.id));
 
-                      for (const student of targets) {
-                        await fetch(`${API_BASE_URL}/submissions`, {
+                      const alreadyAssignedTargets = targets.filter(s => assignedStudentNames.includes(s.name?.trim().toLowerCase()));
+                      const validTargets = targets.filter(s => !assignedStudentNames.includes(s.name?.trim().toLowerCase()));
+
+                      if (validTargets.length === 0) {
+                        const names = alreadyAssignedTargets.map(s => s.name).join(', ') || 'Selected student(s)';
+                        setAssignNotification({
+                          type: 'warning',
+                          message: `⚠️ Already Sent! This assessment has already been assigned to ${names}. Cannot re-send.`
+                        });
+                        setIsAssigning(false);
+                        return;
+                      }
+
+                      let successCount = 0;
+                      const conflictErrors: string[] = [];
+
+                      for (const student of validTargets) {
+                        const res = await fetch(`${API_BASE_URL}/submissions`, {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({
@@ -741,18 +872,52 @@ export default function ManageAssessments() {
                             date: new Date().toLocaleDateString('en-CA')
                           })
                         });
+
+                        if (res.status === 409) {
+                          const errData = await res.json().catch(() => ({}));
+                          conflictErrors.push(errData.message || `${student.name} is already assigned.`);
+                        } else if (res.ok) {
+                          successCount++;
+                          setAssignedStudentNames(prev => [...prev, student.name.trim().toLowerCase()]);
+                        }
                       }
-                      alert(`Published to ${targets.length} student(s) successfully!`);
-                      setShowAssignModal(false);
-                      setSelectedAssignees(['All']);
+
+                      if (conflictErrors.length > 0 && successCount === 0) {
+                        setAssignNotification({
+                          type: 'warning',
+                          message: `⚠️ Already Sent: ${conflictErrors[0]}`
+                        });
+                      } else if (successCount > 0) {
+                        setAssignNotification({
+                          type: 'success',
+                          message: `✓ Successfully assigned to ${successCount} student(s)!`
+                        });
+                        setTimeout(() => {
+                          setShowAssignModal(false);
+                          setSelectedAssignees(['All']);
+                          setAssignNotification(null);
+                        }, 2000);
+                      }
                     } catch (err) {
                       console.error(err);
-                      alert('Error assigning assessment');
+                      setAssignNotification({
+                        type: 'error',
+                        message: 'Error assigning assessment. Please try again.'
+                      });
+                    } finally {
+                      setIsAssigning(false);
                     }
                   }}
-                  style={{ flex: 2, padding: '1rem', borderRadius: '1rem', border: 'none', background: 'linear-gradient(135deg, #059669, #10b981)', color: '#ffffff', fontWeight: 800, fontSize: '0.95rem', cursor: 'pointer', boxShadow: '0 4px 14px 0 rgba(5, 150, 105, 0.39)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                  style={{
+                    flex: 2, padding: '0.85rem', borderRadius: '1rem', border: 'none',
+                    background: isAssigning ? '#94a3b8' : 'linear-gradient(135deg, #059669, #10b981)',
+                    color: '#ffffff', fontWeight: 800, fontSize: '0.95rem',
+                    cursor: isAssigning ? 'not-allowed' : 'pointer',
+                    boxShadow: '0 4px 14px 0 rgba(5, 150, 105, 0.39)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
+                  }}
                 >
-                  <Send size={18} /> Publish Now
+                  <Send size={18} /> {isAssigning ? 'Publishing...' : 'Publish Now'}
                 </motion.button>
               </div>
             </motion.div>

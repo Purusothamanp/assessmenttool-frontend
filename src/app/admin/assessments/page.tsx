@@ -15,7 +15,8 @@ import {
   LayoutGrid,
   Layers,
   Award,
-  X
+  X,
+  AlertCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
@@ -59,6 +60,31 @@ export default function AdminAssessments() {
   // Assignment specific states
   const [studentsList, setStudentsList] = useState<any[]>([]);
   const [selectedAssignee, setSelectedAssignee] = useState('All');
+  const [assignedStudentNames, setAssignedStudentNames] = useState<string[]>([]);
+  const [assignNotification, setAssignNotification] = useState<{ type: 'success' | 'warning' | 'error'; message: string } | null>(null);
+  const [isAssigning, setIsAssigning] = useState(false);
+
+  const openAssignModal = async (a: Assessment) => {
+    setSelectedAssessment(a);
+    setAssignNotification(null);
+    try {
+      const res = await fetch(`${API_BASE_URL}/submissions?assessmentId=${a.id}`);
+      if (res.ok) {
+        const subs = await res.json();
+        const names = Array.isArray(subs)
+          ? subs.map((s: any) => s.studentName?.trim().toLowerCase()).filter(Boolean)
+          : [];
+        setAssignedStudentNames(names);
+      } else {
+        setAssignedStudentNames([]);
+      }
+    } catch (err) {
+      console.error('Failed to load submissions:', err);
+      setAssignedStudentNames([]);
+    }
+    setSelectedAssignee('All');
+    setShowAssignModal(true);
+  };
 
   // Form states
   const [title, setTitle] = useState('');
@@ -512,7 +538,7 @@ export default function AdminAssessments() {
                         <motion.button
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
-                          onClick={() => { setSelectedAssessment(a); setShowAssignModal(true); }}
+                          onClick={() => openAssignModal(a)}
                           style={{
                             width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(59, 130, 246, 0.15)',
                             color: 'var(--admin-primary)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
@@ -580,7 +606,7 @@ export default function AdminAssessments() {
                     <span style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>{a.date}</span>
                     <div style={{ display: 'flex', gap: '0.35rem' }}>
                       <button 
-                        onClick={() => { setSelectedAssessment(a); setShowAssignModal(true); }}
+                        onClick={() => openAssignModal(a)}
                         className="user-action-btn edit"
                         title="Assign"
                       >
@@ -636,35 +662,97 @@ export default function AdminAssessments() {
                 <p style={{ color: 'var(--muted-foreground)', fontSize: '1rem', fontWeight: 500 }}>{selectedAssessment?.title}</p>
               </div>
 
+              {/* Notification Banner */}
+              <AnimatePresence>
+                {assignNotification && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    style={{
+                      padding: '0.75rem 1rem',
+                      borderRadius: '0.75rem',
+                      marginBottom: '1.25rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.65rem',
+                      fontSize: '0.86rem',
+                      fontWeight: 600,
+                      background: assignNotification.type === 'success' ? '#ecfdf5' : assignNotification.type === 'warning' ? '#fffbeb' : '#fef2f2',
+                      color: assignNotification.type === 'success' ? '#065f46' : assignNotification.type === 'warning' ? '#92400e' : '#991b1b',
+                      border: `1.5px solid ${assignNotification.type === 'success' ? '#a7f3d0' : assignNotification.type === 'warning' ? '#fde68a' : '#fecaca'}`,
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+                    }}
+                  >
+                    {assignNotification.type === 'success' ? (
+                      <CheckCircle2 size={18} color="#059669" style={{ flexShrink: 0 }} />
+                    ) : (
+                      <AlertCircle size={18} color={assignNotification.type === 'warning' ? '#d97706' : '#dc2626'} style={{ flexShrink: 0 }} />
+                    )}
+                    <span style={{ flex: 1 }}>{assignNotification.message}</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               <div style={{ marginBottom: '2rem' }}>
                 <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.75rem', fontWeight: 700, color: 'var(--secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Target Recipient(s)
+                  Target Recipient(s) ({studentsList.filter(s => assignedStudentNames.includes(s.name?.trim().toLowerCase())).length} already assigned)
                 </label>
                 <select 
                   className="premium-input"
                   value={selectedAssignee}
-                  onChange={e => setSelectedAssignee(e.target.value)}
+                  onChange={e => {
+                    setSelectedAssignee(e.target.value);
+                    setAssignNotification(null);
+                  }}
                   style={{ width: '100%', padding: '1rem', borderRadius: '1rem', border: '1px solid #e2e8f0', fontSize: '1rem', fontWeight: 500 }}
                 >
-                  <option value="All">All Registered Students</option>
-                  {studentsList.map(s => (
-                    <option key={s.id} value={s.id}>{s.name} ({s.email})</option>
-                  ))}
+                  <option value="All">
+                    All Registered Students ({studentsList.filter(s => !assignedStudentNames.includes(s.name?.trim().toLowerCase())).length} unassigned)
+                  </option>
+                  {studentsList.map(s => {
+                    const isAssigned = assignedStudentNames.includes(s.name?.trim().toLowerCase());
+                    return (
+                      <option key={s.id} value={s.id}>
+                        {s.name} ({s.email}) {isAssigned ? '— [ALREADY SENT]' : ''}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 
               <div style={{ display: 'flex', gap: '1rem' }}>
-                <button onClick={() => setShowAssignModal(false)} className="btn-secondary" style={{ flex: 1, border: 'none', background: '#f8fafc', fontWeight: 700 }}>Cancel</button>
+                <button onClick={() => { setShowAssignModal(false); setAssignNotification(null); }} className="btn-secondary" style={{ flex: 1, border: 'none', background: '#f8fafc', fontWeight: 700 }}>Cancel</button>
                 <button 
+                  disabled={isAssigning}
                   onClick={async () => {
                     try {
+                      setIsAssigning(true);
+                      setAssignNotification(null);
+
+                      const unassignedStudents = studentsList.filter(s => !assignedStudentNames.includes(s.name?.trim().toLowerCase()));
                       const targets = selectedAssignee === 'All' 
-                        ? studentsList 
+                        ? unassignedStudents 
                         : studentsList.filter(s => s.id === selectedAssignee);
                       
+                      const alreadyAssignedTargets = targets.filter(s => assignedStudentNames.includes(s.name?.trim().toLowerCase()));
+                      const validTargets = targets.filter(s => !assignedStudentNames.includes(s.name?.trim().toLowerCase()));
+
+                      if (validTargets.length === 0) {
+                        const nameStr = alreadyAssignedTargets.map(s => s.name).join(', ') || 'Selected student';
+                        setAssignNotification({
+                          type: 'warning',
+                          message: `⚠️ Already Sent! This assessment has already been assigned to ${nameStr}. Cannot re-send.`
+                        });
+                        setIsAssigning(false);
+                        return;
+                      }
+
+                      let successCount = 0;
                       const dateStr = new Date().toLocaleDateString('en-CA');
-                      for (const student of targets) {
-                        await fetch(`${API_BASE_URL}/submissions`, {
+
+                      for (const student of validTargets) {
+                        const res = await fetch(`${API_BASE_URL}/submissions`, {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({
@@ -677,19 +765,44 @@ export default function AdminAssessments() {
                             date: dateStr
                           })
                         });
+
+                        if (res.status === 409) {
+                          const errData = await res.json().catch(() => ({}));
+                          setAssignNotification({
+                            type: 'warning',
+                            message: `⚠️ Already Sent: ${errData.message || 'Already assigned.'}`
+                          });
+                        } else if (res.ok) {
+                          successCount++;
+                          setAssignedStudentNames(prev => [...prev, student.name.trim().toLowerCase()]);
+                        }
                       }
-                      alert(`Protocol successful! Assigned to ${targets.length} candidates.`);
-                      setShowAssignModal(false);
-                      setSelectedAssignee('All');
+
+                      if (successCount > 0) {
+                        setAssignNotification({
+                          type: 'success',
+                          message: `✓ Protocol successful! Assigned to ${successCount} candidates.`
+                        });
+                        setTimeout(() => {
+                          setShowAssignModal(false);
+                          setSelectedAssignee('All');
+                          setAssignNotification(null);
+                        }, 2000);
+                      }
                     } catch (err) {
                       console.error(err);
-                      alert('Error assigning assessment');
+                      setAssignNotification({
+                        type: 'error',
+                        message: 'Error assigning assessment. Please try again.'
+                      });
+                    } finally {
+                      setIsAssigning(false);
                     }
                   }} 
                   className="btn-primary" 
-                  style={{ flex: 2, background: 'var(--admin-primary)', fontWeight: 800 }}
+                  style={{ flex: 2, background: isAssigning ? '#94a3b8' : 'var(--admin-primary)', fontWeight: 800, cursor: isAssigning ? 'not-allowed' : 'pointer' }}
                 >
-                  Assign Assessment
+                  {isAssigning ? 'Assigning...' : 'Assign Assessment'}
                 </button>
               </div>
             </motion.div>

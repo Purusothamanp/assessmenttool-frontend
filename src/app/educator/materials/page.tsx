@@ -14,7 +14,7 @@ import {
   Send,
   Check
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { API_BASE_URL } from '@/lib/api';
 
@@ -26,6 +26,8 @@ interface StudyMaterial {
   fileType: string;
   uploadedBy: string;
   uploadDate: string;
+  sentStudentIds?: string[];
+  sentStudentIdsJson?: string;
 }
 
 interface User {
@@ -55,33 +57,97 @@ export default function EducatorMaterials() {
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [isSending, setIsSending] = useState(false);
   const [sendSuccess, setSendSuccess] = useState(false);
+  const [materialNotification, setMaterialNotification] = useState<{ type: 'success' | 'warning' | 'error'; message: string } | null>(null);
 
   const openSendModal = async (material: StudyMaterial) => {
     setSelectedMaterial(material);
     setShowSendModal(true);
     setSendSuccess(false);
     setSelectedStudentIds([]);
+    setMaterialNotification(null);
     try {
       const res = await fetch(`${API_BASE_URL}/users?role=student`);
       if (res.ok) {
         const data = await res.json();
-        setStudents(data);
+        const studentList = Array.isArray(data)
+          ? data.filter((u: any) => u.role?.toLowerCase() === 'student')
+          : [];
+        setStudents(studentList);
       }
     } catch (err) {
       console.error('Failed to fetch students', err);
     }
   };
 
-  const handleSendMaterial = () => {
+  const handleSendMaterial = async () => {
+    if (!selectedMaterial || selectedStudentIds.length === 0) return;
+
+    setMaterialNotification(null);
+    const sentList = selectedMaterial.sentStudentIds || [];
+
+    // Check if any selected students already received this
+    const alreadySent = selectedStudentIds.filter(id => sentList.includes(id));
+    const newlySelected = selectedStudentIds.filter(id => !sentList.includes(id));
+
+    if (newlySelected.length === 0) {
+      const names = students
+        .filter(s => alreadySent.includes(s.id))
+        .map(s => s.name)
+        .join(', ') || 'Selected student(s)';
+      setMaterialNotification({
+        type: 'warning',
+        message: `⚠️ Already Sent! This study material has already been sent to ${names}. Cannot re-send.`
+      });
+      return;
+    }
+
     setIsSending(true);
-    // Simulate sending email/notification
-    setTimeout(() => {
-      setIsSending(false);
+    try {
+      const res = await fetch(`${API_BASE_URL}/study-materials/${selectedMaterial.id}/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studentIds: newlySelected })
+      });
+
+      if (res.status === 409) {
+        const errJson = await res.json().catch(() => ({}));
+        setMaterialNotification({
+          type: 'warning',
+          message: `⚠️ Already Sent: ${errJson.message || 'This study material has already been sent to the selected student(s).'}`
+        });
+        setIsSending(false);
+        return;
+      }
+
+      if (!res.ok) {
+        throw new Error('Failed to send material');
+      }
+
+      const data = await res.json();
       setSendSuccess(true);
+      setMaterialNotification({
+        type: 'success',
+        message: `✓ Material successfully sent to ${newlySelected.length} student(s)!`
+      });
+
+      // Update material's sentStudentIds locally and refresh
+      setSelectedMaterial(prev => prev ? { ...prev, sentStudentIds: data.sentStudentIds } : null);
+      fetchMaterials();
+
       setTimeout(() => {
         setShowSendModal(false);
+        setMaterialNotification(null);
+        setSendSuccess(false);
       }, 2000);
-    }, 1500);
+    } catch (err) {
+      console.error(err);
+      setMaterialNotification({
+        type: 'error',
+        message: 'Error sending material. Please try again.'
+      });
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const fetchMaterials = async () => {
@@ -352,55 +418,98 @@ export default function EducatorMaterials() {
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
           background: 'rgba(0,0,0,0.5)', zIndex: 9999, 
           display: 'flex', alignItems: 'flex-start', justifyContent: 'center', backdropFilter: 'blur(4px)',
-          paddingTop: '15vh'
+          paddingTop: '12vh'
         }}>
           <motion.div 
             initial={{ opacity: 0, scale: 0.95, y: -20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             style={{ 
               background: 'var(--card)', padding: '2rem', borderRadius: '1.25rem', 
-              width: '90%', maxWidth: '500px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+              width: '90%', maxWidth: '520px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
               display: 'flex', flexDirection: 'column', maxHeight: '80vh'
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
               <div>
-                <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0 0 0.5rem' }}>Send Material</h2>
+                <h2 style={{ fontSize: '1.35rem', fontWeight: 800, margin: '0 0 0.35rem' }}>Send Material</h2>
                 <p style={{ fontSize: '0.85rem', color: 'var(--muted-foreground)', margin: 0 }}>
                   Share <span style={{ fontWeight: 600, color: 'var(--foreground)' }}>{selectedMaterial.title}</span>
                 </p>
               </div>
-              <button onClick={() => setShowSendModal(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)' }}>
+              <button onClick={() => { setShowSendModal(false); setMaterialNotification(null); }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)' }}>
                 <X size={20} />
               </button>
             </div>
 
+            {/* In-Modal Notification Alert */}
+            <AnimatePresence>
+              {materialNotification && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  style={{
+                    padding: '0.75rem 1rem',
+                    borderRadius: '0.75rem',
+                    marginBottom: '1rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.65rem',
+                    fontSize: '0.86rem',
+                    fontWeight: 600,
+                    background: materialNotification.type === 'success' ? '#ecfdf5' : materialNotification.type === 'warning' ? '#fffbeb' : '#fef2f2',
+                    color: materialNotification.type === 'success' ? '#065f46' : materialNotification.type === 'warning' ? '#92400e' : '#991b1b',
+                    border: `1.5px solid ${materialNotification.type === 'success' ? '#a7f3d0' : materialNotification.type === 'warning' ? '#fde68a' : '#fecaca'}`,
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+                  }}
+                >
+                  {materialNotification.type === 'success' ? (
+                    <Check size={18} color="#059669" style={{ flexShrink: 0 }} />
+                  ) : (
+                    <AlertCircle size={18} color={materialNotification.type === 'warning' ? '#d97706' : '#dc2626'} style={{ flexShrink: 0 }} />
+                  )}
+                  <span style={{ flex: 1 }}>{materialNotification.message}</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {sendSuccess ? (
-              <div style={{ textAlign: 'center', padding: '2rem 0' }}>
-                <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
-                  <Check size={30} color="white" />
+              <div style={{ textAlign: 'center', padding: '1.5rem 0' }}>
+                <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
+                  <Check size={28} color="white" />
                 </div>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: '0 0 0.5rem' }}>Sent Successfully!</h3>
-                <p style={{ fontSize: '0.9rem', color: 'var(--muted-foreground)', margin: 0 }}>
-                  Students will receive a notification.
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: '0 0 0.35rem' }}>Sent Successfully!</h3>
+                <p style={{ fontSize: '0.88rem', color: 'var(--muted-foreground)', margin: 0 }}>
+                  Recipients will now have access to this study resource.
                 </p>
               </div>
             ) : (
               <>
                 <div style={{ marginBottom: '1.5rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, margin: 0 }}>Select Recipients</label>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, margin: 0 }}>
+                      Select Recipients ({students.filter(s => selectedMaterial.sentStudentIds?.includes(s.id)).length} already sent)
+                    </label>
                     <button 
                       onClick={() => {
-                        if (selectedStudentIds.length === students.length) {
+                        setMaterialNotification(null);
+                        const unassigned = students.filter(s => !selectedMaterial.sentStudentIds?.includes(s.id));
+                        if (unassigned.length === 0) {
+                          setMaterialNotification({
+                            type: 'warning',
+                            message: '⚠️ All students have already received this study material.'
+                          });
+                          return;
+                        }
+                        if (selectedStudentIds.length === unassigned.length) {
                           setSelectedStudentIds([]);
                         } else {
-                          setSelectedStudentIds(students.map(s => s.id));
+                          setSelectedStudentIds(unassigned.map(s => s.id));
                         }
                       }}
-                      style={{ background: 'transparent', border: 'none', color: 'var(--educator-primary)', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                      style={{ background: 'transparent', border: 'none', color: 'var(--educator-primary)', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', padding: 0 }}
                     >
-                      {selectedStudentIds.length === students.length ? 'Deselect All' : 'Select All'}
+                      {selectedStudentIds.length > 0 ? 'Deselect All' : 'Select Remaining'}
                     </button>
                   </div>
                   
@@ -413,38 +522,63 @@ export default function EducatorMaterials() {
                     paddingRight: '0.5rem',
                     marginTop: '0.5rem'
                   }}>
-                    {students.map(s => (
-                      <div 
-                        key={s.id}
-                        onClick={() => {
-                          if (selectedStudentIds.includes(s.id)) {
-                            setSelectedStudentIds(selectedStudentIds.filter(id => id !== s.id));
-                          } else {
-                            setSelectedStudentIds([...selectedStudentIds, s.id]);
-                          }
-                        }}
-                        style={{
-                          padding: '0.85rem',
-                          borderRadius: '0.75rem',
-                          border: `2px solid ${selectedStudentIds.includes(s.id) ? 'var(--educator-primary)' : 'var(--card-border)'}`,
-                          background: selectedStudentIds.includes(s.id) ? 'var(--educator-accent)' : 'var(--card)',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          boxShadow: selectedStudentIds.includes(s.id) ? '0 4px 12px rgba(0,0,0,0.05)' : 'none'
-                        }}
-                      >
-                        <div style={{ fontWeight: 700, fontSize: '0.9rem', color: selectedStudentIds.includes(s.id) ? 'var(--educator-primary)' : 'var(--foreground)', marginBottom: '0.25rem' }}>{s.name}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.email}</div>
-                      </div>
-                    ))}
+                    {students.map(s => {
+                      const isAlreadySent = selectedMaterial.sentStudentIds?.includes(s.id);
+                      const isSelected = selectedStudentIds.includes(s.id);
+
+                      return (
+                        <div 
+                          key={s.id}
+                          onClick={() => {
+                            if (isAlreadySent) {
+                              setMaterialNotification({
+                                type: 'warning',
+                                message: `⚠️ Already Sent! This study material has already been sent to ${s.name}. Cannot re-send.`
+                              });
+                              return;
+                            }
+                            setMaterialNotification(null);
+                            if (isSelected) {
+                              setSelectedStudentIds(selectedStudentIds.filter(id => id !== s.id));
+                            } else {
+                              setSelectedStudentIds([...selectedStudentIds, s.id]);
+                            }
+                          }}
+                          style={{
+                            padding: '0.85rem',
+                            borderRadius: '0.75rem',
+                            border: `2px solid ${isAlreadySent ? '#cbd5e1' : isSelected ? 'var(--educator-primary)' : 'var(--card-border)'}`,
+                            background: isAlreadySent ? '#f8fafc' : isSelected ? 'var(--educator-accent)' : 'var(--card)',
+                            cursor: isAlreadySent ? 'default' : 'pointer',
+                            opacity: isAlreadySent ? 0.75 : 1,
+                            transition: 'all 0.2s',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            boxShadow: isSelected ? '0 4px 12px rgba(0,0,0,0.05)' : 'none'
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                            <div style={{ fontWeight: 700, fontSize: '0.9rem', color: isAlreadySent ? '#64748b' : isSelected ? 'var(--educator-primary)' : 'var(--foreground)' }}>
+                              {s.name}
+                            </div>
+                            {isAlreadySent ? (
+                              <span style={{ fontSize: '0.65rem', padding: '0.15rem 0.45rem', borderRadius: '1rem', background: '#e2e8f0', color: '#475569', fontWeight: 700 }}>
+                                Already Sent
+                              </span>
+                            ) : isSelected ? (
+                              <Check size={16} color="var(--educator-primary)" />
+                            ) : null}
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.email}</div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
                 
                 <div style={{ display: 'flex', gap: '1rem' }}>
                   <button 
-                    onClick={() => setShowSendModal(false)}
+                    onClick={() => { setShowSendModal(false); setMaterialNotification(null); }}
                     style={{ flex: 1, padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--card-border)', background: 'transparent', color: 'var(--foreground)', fontWeight: 600, cursor: 'pointer' }}
                   >
                     Cancel
@@ -454,7 +588,7 @@ export default function EducatorMaterials() {
                     disabled={isSending || selectedStudentIds.length === 0}
                     style={{ 
                       flex: 1, padding: '0.75rem', borderRadius: '0.5rem', border: 'none', 
-                      background: 'var(--educator-primary)', color: 'white', fontWeight: 700, 
+                      background: isSending ? '#94a3b8' : 'var(--educator-primary)', color: 'white', fontWeight: 700, 
                       cursor: (isSending || selectedStudentIds.length === 0) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
                       opacity: (isSending || selectedStudentIds.length === 0) ? 0.7 : 1
                     }}
