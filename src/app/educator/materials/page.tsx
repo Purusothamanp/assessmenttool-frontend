@@ -171,6 +171,11 @@ export default function EducatorMaterials() {
     e.preventDefault();
     if (!file || !title || !user) return;
 
+    if (file.size > 50 * 1024 * 1024) {
+      alert('File size exceeds the 50 MB limit. Please select a smaller file.');
+      return;
+    }
+
     setIsUploading(true);
     const formData = new FormData();
     formData.append('title', title);
@@ -192,11 +197,12 @@ export default function EducatorMaterials() {
         setFile(null);
         fetchMaterials();
       } else {
-        alert('Failed to upload material');
+        const errorData = await res.json().catch(() => null);
+        alert(errorData?.message || `Failed to upload material (Server status: ${res.status})`);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Upload error', err);
-      alert('Error during upload');
+      alert(`Error during upload: ${err?.message || 'Network connection failed or server upload limit exceeded.'}`);
     } finally {
       setIsUploading(false);
     }
@@ -306,7 +312,7 @@ export default function EducatorMaterials() {
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: 'var(--muted-foreground)' }}>
                     <UploadCloud size={32} style={{ marginBottom: '0.5rem' }} />
                     <span style={{ fontWeight: 600 }}>Click to browse files</span>
-                    <span style={{ fontSize: '0.75rem', marginTop: '0.25rem' }}>PDF, Word, PPT (Max 5MB recommended)</span>
+                    <span style={{ fontSize: '0.75rem', marginTop: '0.25rem' }}>PDF, Word, PPT (Max 50MB)</span>
                   </div>
                 )}
               </div>
