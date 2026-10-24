@@ -40,7 +40,7 @@ export default function Home() {
       color: '#0f172a',
       position: 'relative',
       overflow: 'hidden',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif'
+      fontFamily: "'Outfit', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
     }}>
       {/* Background Soft Warm Ambient Glows */}
       <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
@@ -147,11 +147,11 @@ export default function Home() {
               <Rocket size={22} />
             </motion.div>
             <span style={{ fontSize: '1.4rem', fontWeight: 900, letterSpacing: '-0.5px', color: '#0f172a' }}>
-              Assessment<span style={{
+              Assess<span style={{
                 background: 'linear-gradient(90deg, #a855f7 0%, #ec4899 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent'
-              }}>Tool</span>
+              }}>Nova</span>
             </span>
           </Link>
 
@@ -346,23 +346,23 @@ export default function Home() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.1 }}
               style={{
-                fontSize: 'clamp(2.5rem, 4.2vw, 3.8rem)',
+                fontSize: 'clamp(2.6rem, 4.4vw, 4rem)',
                 fontWeight: 900,
-                lineHeight: 1.12,
-                letterSpacing: '-0.04em',
+                lineHeight: 1.15,
+                letterSpacing: '-0.035em',
                 color: '#0f172a',
-                marginBottom: '1rem'
+                marginBottom: '1.25rem'
               }}
             >
-              Create and Manage<br />
+              Smart Assessment<br />
               <span style={{
-                background: 'linear-gradient(90deg, #2563eb 0%, #9333ea 50%, #ec4899 100%)',
+                background: 'linear-gradient(90deg, #2563eb 0%, #a855f7 45%, #ec4899 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 display: 'inline-block'
               }}>
-                Assessments
-              </span> Easily
+                Management System
+              </span>
             </motion.h1>
 
 
@@ -423,10 +423,10 @@ export default function Home() {
             >
               <img
                 src="/hero_illustration_new.jpg"
-                alt="Assessment Tool 3D Laptop Illustration"
+                alt="AssessNova - Smart Assessment Management System"
                 style={{
                   width: '100%',
-                  height: '280px',
+                  height: '315px',
                   display: 'block',
                   borderRadius: '1.75rem',
                   objectFit: 'cover',
@@ -526,14 +526,14 @@ export default function Home() {
                 <Rocket size={14} />
               </div>
               <span style={{ fontSize: '1rem', fontWeight: 800, letterSpacing: '-0.5px' }}>
-                Assessment<span style={{ color: '#ec4899' }}>Tool</span>
+                Assess<span style={{ color: '#ec4899' }}>Nova</span>
               </span>
             </div>
             <p style={{ color: '#64748b', fontSize: '0.7rem', margin: 0, lineHeight: 1.3, fontWeight: 500 }}>
               Empowering modern education with AI-driven assessments and real-time analytics.
             </p>
             <p style={{ color: '#94a3b8', fontSize: '0.65rem', margin: '0.2rem 0 0 0', fontWeight: 600 }}>
-              &copy; {new Date().getFullYear()} AssessmentTool Inc. All rights reserved.
+              &copy; {new Date().getFullYear()} AssessNova Inc. All rights reserved.
             </p>
           </div>
 
@@ -566,7 +566,7 @@ export default function Home() {
               </motion.div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#64748b', fontSize: '0.7rem', fontWeight: 600, marginTop: '0.2rem' }}>
-              <Mail size={10} color="#ec4899" /> support@assessmenttool.com
+              <Mail size={10} color="#ec4899" /> support@assessnova.com
             </div>
           </div>
         </div>
@@ -671,9 +671,9 @@ export default function Home() {
                   <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: '#dcfce7', color: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
                     <Info size={24} />
                   </div>
-                  <h2 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '0.5rem', color: '#0f172a' }}>About AssessmentTool</h2>
+                  <h2 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '0.5rem', color: '#0f172a' }}>About AssessNova</h2>
                   <p style={{ color: '#64748b', fontSize: '0.92rem', lineHeight: 1.6, margin: '0 0 1.25rem' }}>
-                    AssessmentTool is a next-generation education technology platform designed to streamline online examinations, auto-evaluate student submissions, and provide real-time analytical reports.
+                    AssessNova is a smart assessment management system and next-generation education technology platform designed to streamline online examinations, auto-evaluate student submissions, and provide real-time analytical reports.
                   </p>
                 </div>
               )}

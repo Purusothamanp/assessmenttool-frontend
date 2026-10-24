@@ -134,7 +134,7 @@ function LoginForm() {
         <div className="auth-image-panel" style={{ flex: '1.2', position: 'relative', background: '#0f172a' }}>
           <img 
             src="/auth-bg.jpg" 
-            alt="Assessment Tool Platform" 
+            alt="AssessNova - Smart Assessment Management System" 
             style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }} 
           />
           <div style={{ 
@@ -143,9 +143,12 @@ function LoginForm() {
             display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', 
             padding: '3rem', color: 'white' 
           }}>
-            <h2 style={{ color: '#ffffff', fontSize: '2rem', fontWeight: 800, marginBottom: '0.75rem', letterSpacing: '-0.5px', textShadow: '0 2px 10px rgba(0,0,0,0.4)' }}>
-              Assessment Tool
+            <h2 style={{ color: '#ffffff', fontSize: '2rem', fontWeight: 800, marginBottom: '0.35rem', letterSpacing: '-0.5px', textShadow: '0 2px 10px rgba(0,0,0,0.4)' }}>
+              AssessNova
             </h2>
+            <p style={{ color: '#93c5fd', fontSize: '0.82rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
+              Smart Assessment Management System
+            </p>
             <p style={{ color: '#f8fafc', fontSize: '1.05rem', lineHeight: 1.5, fontWeight: 500, textShadow: '0 1px 5px rgba(0,0,0,0.4)' }}>
               &quot;Your journey to smarter learning and effortless assessment starts here.&quot;
             </p>

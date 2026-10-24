@@ -124,11 +124,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <path d="M12 25.5L22 31.2L32 25.5" stroke="#dfb15b" strokeWidth="2" strokeLinejoin="round" opacity="0.85" />
           </svg>
           <div>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#dfb15b', margin: 0, lineHeight: 1.1, letterSpacing: '-0.3px' }}>
-              Assessment
-            </h2>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#dfb15b', margin: 0, lineHeight: 1.1, letterSpacing: '-0.3px' }}>
-              Tool
+            <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#dfb15b', margin: 0, lineHeight: 1.1, letterSpacing: '-0.3px' }}>
+              Assess<span style={{ color: '#ffffff' }}>Nova</span>
             </h2>
             <span 
               style={{ 

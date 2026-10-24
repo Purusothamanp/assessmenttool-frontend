@@ -4,8 +4,8 @@ import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 
 export const metadata: Metadata = {
-  title: "Assessment Tool - Powering Education",
-  description: "Comprehensive assessment management system for educators and administrators.",
+  title: "AssessNova - Smart Assessment Management System",
+  description: "AssessNova - A modern, smart assessment management system for students, educators, and administrators.",
 };
 
 export default function RootLayout({
