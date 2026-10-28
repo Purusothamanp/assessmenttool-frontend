@@ -151,8 +151,13 @@ export default function UserManagementPage() {
 
       if (newRole === 'educator') {
         updatedUser.educatorId = newIdNumber.trim() || undefined;
+        updatedUser.studentId = null;
       } else if (newRole === 'student') {
         updatedUser.studentId = newIdNumber.trim() || undefined;
+        updatedUser.educatorId = null;
+      } else {
+        updatedUser.educatorId = null;
+        updatedUser.studentId = null;
       }
 
       try {
@@ -186,8 +191,13 @@ export default function UserManagementPage() {
 
       if (newRole === 'educator') {
         newUser.educatorId = newIdNumber.trim() || undefined;
+        newUser.studentId = null;
       } else if (newRole === 'student') {
         newUser.studentId = newIdNumber.trim() || undefined;
+        newUser.educatorId = null;
+      } else {
+        newUser.educatorId = null;
+        newUser.studentId = null;
       }
 
       try {
@@ -545,7 +555,7 @@ export default function UserManagementPage() {
                             boxShadow: user.role === 'admin' ? '0 1px 4px rgba(239, 68, 68, 0.12)' : user.role === 'educator' ? '0 1px 4px rgba(16, 185, 129, 0.12)' : 'none'
                           }}
                         >
-                          {user.role} {user.educatorId ? `• ${user.educatorId}` : user.studentId ? `• ${user.studentId}` : ''}
+                          {user.role} {user.role === 'educator' && (user.educatorId || user.studentId) ? `• ${user.educatorId || user.studentId}` : user.role === 'student' && user.studentId ? `• ${user.studentId}` : ''}
                         </span>
                       </td>
                       <td style={{ padding: '0.85rem 1.25rem', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9', background: '#ffffff' }}>
@@ -647,7 +657,7 @@ export default function UserManagementPage() {
                           color: user.role === 'admin' ? '#b91c1c' : user.role === 'educator' ? '#15803d' : '#7e22ce'
                         }}
                       >
-                        {user.role} {user.educatorId ? `• ${user.educatorId}` : user.studentId ? `• ${user.studentId}` : ''}
+                        {user.role} {user.role === 'educator' && (user.educatorId || user.studentId) ? `• ${user.educatorId || user.studentId}` : user.role === 'student' && user.studentId ? `• ${user.studentId}` : ''}
                       </span>
                     </div>
 
