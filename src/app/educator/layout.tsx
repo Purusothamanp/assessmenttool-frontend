@@ -302,9 +302,16 @@ export default function EducatorLayout({ children }: { children: React.ReactNode
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <div style={{ textAlign: 'right' }}>
-                <p style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--foreground, #0f172a)', margin: 0 }}>{user?.name || 'Instructor'}</p>
+                <p style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--foreground, #0f172a)', margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.4rem' }}>
+                  <span>{user?.name || 'Instructor'}</span>
+                  {(user?.educatorId || (user?.role === 'educator' && user?.studentId)) && (
+                    <span style={{ padding: '0.12rem 0.5rem', background: 'rgba(5, 150, 105, 0.12)', color: '#059669', borderRadius: '0.5rem', fontSize: '0.72rem', fontWeight: 800 }}>
+                      ID: {user?.educatorId || user?.studentId}
+                    </span>
+                  )}
+                </p>
                 <p style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>
-                  {user?.educatorId ? `ID: ${user.educatorId} • ` : ''}{user?.role || 'Educator'}
+                  {(user?.educatorId || (user?.role === 'educator' && user?.studentId)) ? `ID: ${user?.educatorId || user?.studentId} • ` : ''}{user?.role || 'Educator'}
                 </p>
               </div>
               <div 

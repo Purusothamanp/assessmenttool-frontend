@@ -36,6 +36,7 @@ export default function UserManagementPage() {
   const [newEmail, setNewEmail] = useState('');
   const [newRole, setNewRole] = useState<UserRecord['role']>('student');
   const [newStatus, setNewStatus] = useState<'active' | 'inactive'>('active');
+  const [newIdNumber, setNewIdNumber] = useState('');
 
   useEffect(() => {
     fetchUsers();
@@ -128,6 +129,7 @@ export default function UserManagementPage() {
     setNewEmail(user.email);
     setNewRole(user.role);
     setNewStatus(user.status);
+    setNewIdNumber(user.educatorId || user.studentId || '');
     setShowModal(true);
   };
 
@@ -139,13 +141,19 @@ export default function UserManagementPage() {
 
     if (editingUser) {
       // Update existing user
-      const updatedUser = {
+      const updatedUser: any = {
         ...editingUser,
         name: newName,
         email: newEmail,
         role: newRole,
         status: newStatus
       };
+
+      if (newRole === 'educator') {
+        updatedUser.educatorId = newIdNumber.trim() || undefined;
+      } else if (newRole === 'student') {
+        updatedUser.studentId = newIdNumber.trim() || undefined;
+      }
 
       try {
         const response = await fetch(`${API_BASE_URL}/users/${editingUser.id}`, {
@@ -160,6 +168,7 @@ export default function UserManagementPage() {
           setNewEmail('');
           setNewRole('student');
           setNewStatus('active');
+          setNewIdNumber('');
           setShowModal(false);
         }
       } catch (error) {
@@ -167,13 +176,19 @@ export default function UserManagementPage() {
       }
     } else {
       // Create new user
-      const newUser = {
+      const newUser: any = {
         name: newName,
         email: newEmail,
         role: newRole,
         status: newStatus,
         lastLogin: 'Never'
       };
+
+      if (newRole === 'educator') {
+        newUser.educatorId = newIdNumber.trim() || undefined;
+      } else if (newRole === 'student') {
+        newUser.studentId = newIdNumber.trim() || undefined;
+      }
 
       try {
         const response = await fetch(`${API_BASE_URL}/users`, {
@@ -187,6 +202,7 @@ export default function UserManagementPage() {
           setNewEmail('');
           setNewRole('student');
           setNewStatus('active');
+          setNewIdNumber('');
           setShowModal(false);
         }
       } catch (error) {
@@ -232,6 +248,7 @@ export default function UserManagementPage() {
             setNewName('');
             setNewEmail('');
             setNewRole('student');
+            setNewIdNumber('');
             setShowModal(true); 
           }}
           style={{ 
@@ -733,6 +750,18 @@ export default function UserManagementPage() {
                 <option value="admin">Admin</option>
               </select>
             </div>
+            {newRole !== 'admin' && (
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: 500, marginBottom: '0.4rem', color: 'var(--foreground)' }}>
+                  {newRole === 'educator' ? 'Educator ID (e.g. ED101)' : 'Student ID (e.g. 21EC045)'}
+                </label>
+                <input 
+                  placeholder={newRole === 'educator' ? 'Ex: ED101' : 'Ex: 21EC045'} 
+                  value={newIdNumber}
+                  onChange={(e) => setNewIdNumber(e.target.value)}
+                />
+              </div>
+            )}
             {editingUser?.role !== 'admin' && (
               <div style={{ marginBottom: '1.5rem' }}>
                 <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: 500, marginBottom: '0.4rem', color: 'var(--foreground)' }}>Account Status</label>
