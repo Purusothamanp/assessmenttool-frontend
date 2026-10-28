@@ -12,6 +12,7 @@ interface User {
   email: string;
   role: UserRole;
   studentId?: string;
+  educatorId?: string;
   dob?: string;
 }
 
@@ -104,6 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email: dbUser.email,
         role: dbUser.role,
         studentId: dbUser.studentId,
+        educatorId: dbUser.educatorId,
         dob: dbUser.dob,
         token: dbUser.token || `token-${dbUser.id}`
       };

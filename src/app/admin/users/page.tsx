@@ -528,7 +528,7 @@ export default function UserManagementPage() {
                             boxShadow: user.role === 'admin' ? '0 1px 4px rgba(239, 68, 68, 0.12)' : user.role === 'educator' ? '0 1px 4px rgba(16, 185, 129, 0.12)' : 'none'
                           }}
                         >
-                          {user.role}
+                          {user.role} {user.educatorId ? `• ${user.educatorId}` : user.studentId ? `• ${user.studentId}` : ''}
                         </span>
                       </td>
                       <td style={{ padding: '0.85rem 1.25rem', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9', background: '#ffffff' }}>
@@ -630,7 +630,7 @@ export default function UserManagementPage() {
                           color: user.role === 'admin' ? '#b91c1c' : user.role === 'educator' ? '#15803d' : '#7e22ce'
                         }}
                       >
-                        {user.role}
+                        {user.role} {user.educatorId ? `• ${user.educatorId}` : user.studentId ? `• ${user.studentId}` : ''}
                       </span>
                     </div>
 

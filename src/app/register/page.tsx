@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, User, Shield, GraduationCap, ArrowLeft, Eye, EyeOff, AlertCircle, Calendar, Hash } from 'lucide-react';
+import { Mail, Lock, User, Shield, GraduationCap, ArrowLeft, Eye, EyeOff, AlertCircle, Calendar, Hash, BookOpen, Award } from 'lucide-react';
 import Link from 'next/link';
 import { API_BASE_URL } from '@/lib/api';
 
@@ -14,8 +14,9 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [dob, setDob] = useState('');
   const [studentId, setStudentId] = useState('');
+  const [educatorId, setEducatorId] = useState('');
+  const [role, setRole] = useState<'student' | 'educator'>('student');
   const [showPassword, setShowPassword] = useState(false);
-  const role = 'student';
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -30,8 +31,18 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !email || !password || !dob || !studentId) {
+    if (!name || !email || !password || !dob) {
       setError('Please fill in all fields');
+      return;
+    }
+
+    if (role === 'student' && !studentId.trim()) {
+      setError('Please enter your Student ID Number');
+      return;
+    }
+
+    if (role === 'educator' && !educatorId.trim()) {
+      setError('Please enter your Educator ID Number (e.g. ED101)');
       return;
     }
 
@@ -73,20 +84,28 @@ export default function RegisterPage() {
 
       const assignRole = normalizedEmail === 'purusothamanp23@gmail.com' ? 'admin' : role;
 
+      const bodyPayload: any = {
+        id: Math.random().toString(36).substring(2, 11),
+        name: name.trim(),
+        email: normalizedEmail,
+        password,
+        role: assignRole,
+        status: 'active',
+        lastLogin: lastLoginStr,
+        dob
+      };
+
+      if (assignRole === 'student' || role === 'student') {
+        bodyPayload.studentId = studentId.trim();
+      }
+      if (assignRole === 'educator' || role === 'educator') {
+        bodyPayload.educatorId = educatorId.trim();
+      }
+
       const response = await fetch(`${API_BASE_URL}/users`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: Math.random().toString(36).substring(2, 11),
-          name,
-          email: normalizedEmail,
-          password,
-          role: assignRole,
-          status: 'active',
-          lastLogin: lastLoginStr,
-          dob,
-          studentId
-        })
+        body: JSON.stringify(bodyPayload)
       });
 
       if (response.ok) {
@@ -229,22 +248,90 @@ export default function RegisterPage() {
           Return to Login
         </Link>
 
-          <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+          <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
           <motion.div 
+            key={role}
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
             whileHover={{ rotate: -10, scale: 1.05 }}
             style={{
               width: '56px', height: '56px', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center',
               margin: '0 auto 1rem', color: 'white',
-              background: 'linear-gradient(135deg, #7c3aed 0%, #3b82f6 100%)',
-              boxShadow: '0 12px 25px -4px rgba(124, 58, 237, 0.45)'
+              background: role === 'student' 
+                ? 'linear-gradient(135deg, #7c3aed 0%, #3b82f6 100%)' 
+                : 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+              boxShadow: role === 'student'
+                ? '0 12px 25px -4px rgba(124, 58, 237, 0.45)'
+                : '0 12px 25px -4px rgba(5, 150, 105, 0.45)'
             }}
           >
-            <GraduationCap size={32} />
+            {role === 'student' ? <GraduationCap size={32} /> : <BookOpen size={30} />}
           </motion.div>
           <h1 style={{ fontSize: '1.8rem', fontWeight: 900, color: '#0f172a', letterSpacing: '-1px', marginBottom: '0.25rem' }}>
-            Student <span className="animated-gradient-text">Registration</span>
+            {role === 'student' ? 'Student' : 'Educator'} <span className="animated-gradient-text">Registration</span>
           </h1>
-          <p style={{ color: '#64748b', fontSize: '0.9rem', fontWeight: 500, margin: 0 }}>Create your student account to take assessments</p>
+          <p style={{ color: '#64748b', fontSize: '0.9rem', fontWeight: 500, margin: 0 }}>
+            {role === 'student' ? 'Create your student account to take assessments' : 'Create your educator account to manage assessments'}
+          </p>
+        </div>
+
+        {/* Role Selector Tabs */}
+        <div style={{
+          display: 'flex',
+          background: '#f1f5f9',
+          padding: '0.3rem',
+          borderRadius: '1rem',
+          gap: '0.35rem',
+          marginBottom: '1.25rem'
+        }}>
+          <button
+            type="button"
+            onClick={() => setRole('student')}
+            style={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.45rem',
+              padding: '0.6rem 1rem',
+              borderRadius: '0.75rem',
+              border: 'none',
+              fontWeight: 700,
+              fontSize: '0.88rem',
+              cursor: 'pointer',
+              transition: 'all 0.25s ease',
+              background: role === 'student' ? '#ffffff' : 'transparent',
+              color: role === 'student' ? '#7c3aed' : '#64748b',
+              boxShadow: role === 'student' ? '0 4px 12px rgba(124, 58, 237, 0.15)' : 'none'
+            }}
+          >
+            <GraduationCap size={18} />
+            Student
+          </button>
+          <button
+            type="button"
+            onClick={() => setRole('educator')}
+            style={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.45rem',
+              padding: '0.6rem 1rem',
+              borderRadius: '0.75rem',
+              border: 'none',
+              fontWeight: 700,
+              fontSize: '0.88rem',
+              cursor: 'pointer',
+              transition: 'all 0.25s ease',
+              background: role === 'educator' ? '#ffffff' : 'transparent',
+              color: role === 'educator' ? '#059669' : '#64748b',
+              boxShadow: role === 'educator' ? '0 4px 12px rgba(5, 150, 105, 0.15)' : 'none'
+            }}
+          >
+            <BookOpen size={18} />
+            Educator
+          </button>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -270,14 +357,20 @@ export default function RegisterPage() {
             </div>
 
             <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', fontSize: '0.78rem', marginBottom: '0.65rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Student ID Number</label>
+              <label style={{ display: 'block', fontSize: '0.78rem', marginBottom: '0.65rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                {role === 'student' ? 'Student ID Number' : 'Educator ID Number'}
+              </label>
               <div style={{ position: 'relative' }}>
-                <Hash size={19} style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                {role === 'student' ? (
+                  <Hash size={19} style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                ) : (
+                  <Award size={19} style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                )}
                 <input
                   type="text"
-                  placeholder="Ex: 21EC045"
-                  value={studentId}
-                  onChange={(e) => setStudentId(e.target.value)}
+                  placeholder={role === 'student' ? 'Ex: 21EC045' : 'Ex: ED101'}
+                  value={role === 'student' ? studentId : educatorId}
+                  onChange={(e) => role === 'student' ? setStudentId(e.target.value) : setEducatorId(e.target.value)}
                   style={{
                     padding: '0.8rem 1.25rem 0.8rem 3.4rem', width: '100%',
                     background: '#ffffff', border: '1px solid #e2e8f0',
@@ -377,7 +470,7 @@ export default function RegisterPage() {
             }}
             disabled={isLoading}
           >
-            {isLoading ? 'Registering...' : 'Create Account'}
+            {isLoading ? 'Registering...' : role === 'student' ? 'Create Student Account' : 'Create Educator Account'}
           </motion.button>
 
           <p style={{ textAlign: 'center', marginTop: '1.25rem', fontSize: '0.85rem', color: '#64748b', fontWeight: 500, marginBottom: 0 }}>
@@ -399,7 +492,7 @@ export default function RegisterPage() {
             gap: '0.5rem'
           }}>
             <Shield size={16} color="#3b82f6" />
-            <span>Educator & Admin accounts are managed by institution administrators.</span>
+            <span>Admin accounts are managed by institution administrators. Students &amp; Educators can register above.</span>
           </div>
         </form>
         </div>

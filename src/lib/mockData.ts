@@ -5,6 +5,8 @@ export interface UserRecord {
   role: 'admin' | 'educator' | 'student';
   status: 'active' | 'inactive';
   lastLogin: string;
+  studentId?: string;
+  educatorId?: string;
 }
 
 export interface AssessmentReport {

@@ -303,7 +303,9 @@ export default function EducatorLayout({ children }: { children: React.ReactNode
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <div style={{ textAlign: 'right' }}>
                 <p style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--foreground, #0f172a)', margin: 0 }}>{user?.name || 'Instructor'}</p>
-                <p style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>{user?.role || 'Educator'}</p>
+                <p style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>
+                  {user?.educatorId ? `ID: ${user.educatorId} • ` : ''}{user?.role || 'Educator'}
+                </p>
               </div>
               <div 
                 className="vibrant-gradient-educator"

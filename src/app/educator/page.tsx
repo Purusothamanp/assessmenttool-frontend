@@ -116,6 +116,11 @@ export default function EducatorDashboard() {
         <h1 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '0.5rem' }}>Educator Dashboard</h1>
         <p style={{ fontSize: '1.1rem', color: 'var(--muted-foreground)', fontWeight: 500 }}>
           Welcome back, <span style={{ fontWeight: 800, color: 'var(--educator-primary)' }}>{user?.name || 'Educator'}</span>!
+          {user?.educatorId && (
+            <span style={{ marginLeft: '1rem', padding: '0.25rem 0.75rem', background: 'rgba(16, 185, 129, 0.1)', color: '#059669', borderRadius: '1rem', fontSize: '0.9rem', fontWeight: 700 }}>
+              ID: {user.educatorId}
+            </span>
+          )}
         </p>
       </div>
 
