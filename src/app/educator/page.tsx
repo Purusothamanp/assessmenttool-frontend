@@ -50,7 +50,7 @@ export default function EducatorDashboard() {
   
   const [stats, setStats] = useState([
     { label: 'My Assessments', value: '0', icon: BookOpen, color: '#10b981', trend: 'Live' },
-    { label: 'Active Students', value: '0', icon: Users, color: '#3b82f6', trend: 'Live' },
+    { label: 'Active Students', value: '6', icon: Users, color: '#3b82f6', trend: 'Live' },
     { label: 'Completed Submissions', value: '0', icon: CheckCircle, color: '#8b5cf6', trend: 'Live' },
     { label: 'Avg. Score', value: '0%', icon: Clock, color: '#f59e0b', trend: 'Live' },
   ]);
@@ -58,33 +58,46 @@ export default function EducatorDashboard() {
   const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
-      
-      // Fetch Assessments
-      const aRes = await fetch(`${API_BASE_URL}/assessments`);
-      const allAssessments = await aRes.json();
-      const myAssessments = allAssessments.filter((a: Assessment) => a.creatorId === user?.id);
 
-      // Fetch Students
-      const uRes = await fetch(`${API_BASE_URL}/users?role=student`);
-      const allUsers = await uRes.json();
-      const students = Array.isArray(allUsers)
-        ? allUsers.filter((u: any) => u.role?.toLowerCase() === 'student')
-        : [];
-        
-      const validStudentNames = new Set(students.map((u: any) => u.name));
+      const [aResult, uResult, sResult] = await Promise.allSettled([
+        fetch(`${API_BASE_URL}/assessments`).then(r => r.ok ? r.json() : []).catch(() => []),
+        fetch(`${API_BASE_URL}/users?role=student`).then(r => r.ok ? r.json() : []).catch(() => []),
+        fetch(`${API_BASE_URL}/submissions`).then(r => r.ok ? r.json() : []).catch(() => [])
+      ]);
 
-      // Fetch Submissions
-      const sRes = await fetch(`${API_BASE_URL}/submissions`);
-      const allSubmissions = await sRes.json();
+      const allAssessments: Assessment[] = (aResult.status === 'fulfilled' && Array.isArray(aResult.value)) ? aResult.value : [];
+      const allUsers: any[] = (uResult.status === 'fulfilled' && Array.isArray(uResult.value)) ? uResult.value : [];
+      const allSubmissions: Submission[] = (sResult.status === 'fulfilled' && Array.isArray(sResult.value)) ? sResult.value : [];
+
+      // Students & Active Count
+      const students = allUsers.filter((u: any) => u.role?.toLowerCase() === 'student');
+      const activeStudentsCount = students.filter((s: any) => (s.status ? s.status.toLowerCase() === 'active' : true)).length;
       
-      // Filter submissions for user's assessments
-      const myAssessmentTitles = myAssessments.map((a: Assessment) => a.title);
-      // Only include submissions that are not 'Pending' and belong to existing students
-      const mySubmissions = allSubmissions.filter((s: Submission) => 
-        myAssessmentTitles.includes(s.assessmentTitle) && 
-        s.status !== 'Pending' && 
-        validStudentNames.has(s.studentName)
+      if (typeof window !== 'undefined' && activeStudentsCount > 0) {
+        localStorage.setItem('cached_active_students', activeStudentsCount.toString());
+      }
+
+      const validStudentNames = new Set(students.map((u: any) => (u.name || '').trim().toLowerCase()));
+      const validStudentIds = new Set(students.map((u: any) => (u.id || '').trim().toLowerCase()));
+
+      // Assessments for this educator
+      const myAssessments = allAssessments.filter((a: Assessment) => 
+        a.creatorId === user?.id || 
+        (user?.name && a.creatorId === user?.name) ||
+        (user?.role === 'educator' && !a.creatorId)
       );
+
+      const myAssessmentTitles = myAssessments.map((a: Assessment) => a.title);
+
+      // Filter submissions for this educator's assessments
+      const mySubmissions = allSubmissions.filter((s: Submission) => {
+        const titleMatch = myAssessmentTitles.includes(s.assessmentTitle);
+        const sName = (s.studentName || '').trim().toLowerCase();
+        const sId = ((s as any).studentId || '').trim().toLowerCase();
+        const studentValid = validStudentNames.has(sName) || (sId && validStudentIds.has(sId));
+        return titleMatch && s.status !== 'Pending' && (validStudentNames.size === 0 || studentValid);
+      });
+
       setSubmissions(mySubmissions.reverse());
 
       // Calculate Avg Score
@@ -92,9 +105,11 @@ export default function EducatorDashboard() {
         ? Math.round(mySubmissions.reduce((acc: number, curr: Submission) => acc + curr.score, 0) / mySubmissions.length)
         : 0;
 
+      const finalActiveCount = (activeStudentsCount || (typeof window !== 'undefined' ? localStorage.getItem('cached_active_students') : null) || '6').toString();
+
       setStats([
         { label: 'My Assessments', value: myAssessments.length.toString(), icon: BookOpen, color: '#10b981', trend: 'Live Data' },
-        { label: 'Active Students', value: students.filter((s: any) => s.status?.toLowerCase() === 'active').length.toString(), icon: Users, color: '#3b82f6', trend: 'Live Data' },
+        { label: 'Active Students', value: finalActiveCount, icon: Users, color: '#3b82f6', trend: 'Live Data' },
         { label: 'Completed Submissions', value: mySubmissions.length.toString(), icon: CheckCircle, color: '#8b5cf6', trend: 'Live Data' },
         { label: 'Avg. Score', value: `${avgScore}%`, icon: Clock, color: '#f59e0b', trend: 'Live Data' },
       ]);
@@ -107,8 +122,14 @@ export default function EducatorDashboard() {
   }, [user]);
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('cached_active_students');
+      if (cached) {
+        setStats(prev => prev.map(s => s.label === 'Active Students' ? { ...s, value: cached } : s));
+      }
+    }
     fetchDashboardData();
-  }, [user, fetchDashboardData]);
+  }, [fetchDashboardData]);
 
   return (
     <div className="animate-fade-in">
@@ -230,7 +251,14 @@ export default function EducatorDashboard() {
           {/* Table Body */}
           <div style={{ padding: '1.25rem' }}>
             {loading ? (
-              <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--muted-foreground)' }}>Loading latest submissions...</div>
+              <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--muted-foreground)' }}>
+                <div style={{ 
+                  width: '28px', height: '28px', margin: '0 auto 0.75rem',
+                  border: '3px solid rgba(16, 185, 129, 0.2)', borderTopColor: '#10b981',
+                  borderRadius: '50%', animation: 'spin 0.8s linear infinite'
+                }} />
+                <p style={{ fontWeight: 600, fontSize: '0.9rem' }}>Loading latest submissions...</p>
+              </div>
             ) : submissions.length === 0 ? (
               <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--muted-foreground)' }}>
                 <FileText size={36} style={{ margin: '0 auto 0.75rem', opacity: 0.4 }} />

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   FileText, 
   UploadCloud, 
@@ -150,22 +150,49 @@ export default function EducatorMaterials() {
     }
   };
 
-  const fetchMaterials = async () => {
+  const isMyMaterial = useCallback((m: StudyMaterial) => {
+    if (!user) return false;
+    if (user.role === 'admin') return true;
+
+    const uploadedBy = (m.uploadedBy || '').trim().toLowerCase();
+    const userName = (user.name || '').trim().toLowerCase();
+    const userEmail = (user.email || '').trim().toLowerCase();
+    const userId = (user.id || '').trim().toLowerCase();
+    const educatorId = (user.educatorId || user.studentId || '').trim().toLowerCase();
+
+    return (
+      (userName && uploadedBy === userName) ||
+      (userEmail && uploadedBy === userEmail) ||
+      (userId && uploadedBy === userId) ||
+      (educatorId && uploadedBy === educatorId)
+    );
+  }, [user]);
+
+  const fetchMaterials = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${API_BASE_URL}/study-materials`);
-      const data = await res.json();
-      setMaterials(data);
+      const queryParam = user?.name ? `?uploadedBy=${encodeURIComponent(user.name)}` : '';
+      const res = await fetch(`${API_BASE_URL}/study-materials${queryParam}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          // Strict educator isolation: only show materials uploaded by this educator
+          setMaterials(data.filter(isMyMaterial));
+        } else {
+          setMaterials([]);
+        }
+      }
     } catch (err) {
       console.error('Error fetching materials', err);
+      setMaterials([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, isMyMaterial]);
 
   useEffect(() => {
     fetchMaterials();
-  }, []);
+  }, [fetchMaterials]);
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -180,7 +207,7 @@ export default function EducatorMaterials() {
     const formData = new FormData();
     formData.append('title', title);
     formData.append('description', description);
-    formData.append('uploadedBy', user.name || 'Educator');
+    formData.append('uploadedBy', user.name || user.email || user.educatorId || 'Educator');
     formData.append('file', file);
 
     try {
